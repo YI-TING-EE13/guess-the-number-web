@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guess The Number Game</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+      color: #fff;
+      text-align: center;
+      padding: 2rem;
+    }
+    .game-container {
+      background-color: rgba(0, 0, 0, 0.5);
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 500px;
+      margin: auto;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    }
+    input, select, button {
+      padding: 0.8rem;
+      margin: 1rem 0;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: none;
+      width: 80%;
+      max-width: 300px;
+    }
+    button {
+      background-color: #00c896;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background-color: #009e74;
+    }
+    .message {
+      font-size: 1.2rem;
+      margin: 1rem 0;
+    }
+    .high-score {
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <h1>🎯 Guess The Number</h1>
+    <p>Select difficulty:</p>
+    <select id="difficulty">
+      <option value="easy">Easy (1-10)</option>
+      <option value="medium">Medium (1-50)</option>
+      <option value="hard">Hard (1-100)</option>
+    </select>
+    <p id="range-info">I'm thinking of a number between 1 and 10</p>
+    <input type="number" id="guess" placeholder="Enter your guess..." />
+    <button onclick="makeGuess()">Guess</button>
+    <p class="message" id="message"></p>
+    <p>Attempts left: <span id="attempts-left">5</span></p>
+    <div class="high-score">
+      <h3>🏆 High Scores</h3>
+      <ul id="high-score-list"></ul>
+    </div>
+  </div>
+
+  <script>
+    const difficulties = {
+      easy: { max: 10, attempts: 5 },
+      medium: { max: 50, attempts: 7 },
+      hard: { max: 100, attempts: 10 }
+    };
+
+    let secretNumber, attemptsLeft, difficultyKey = 'easy';
+    let highScores = JSON.parse(localStorage.getItem('highScores') || '{}');
+
+    function setDifficulty(diff) {
+      difficultyKey = diff;
+      const settings = difficulties[diff];
+      secretNumber = Math.floor(Math.random() * settings.max) + 1;
+      attemptsLeft = settings.attempts;
+      document.getElementById('range-info').textContent = `I'm thinking of a number between 1 and ${settings.max}`;
+      document.getElementById('attempts-left').textContent = attemptsLeft;
+      document.getElementById('message').textContent = '';
+      document.getElementById('guess').value = '';
+    }
+
+    function makeGuess() {
+      const guess = parseInt(document.getElementById('guess').value);
+      if (isNaN(guess)) {
+        showMessage("Please enter a valid number.", 'orange');
+        return;
+      }
+
+      attemptsLeft--;
+      document.getElementById('attempts-left').textContent = attemptsLeft;
+
+      if (guess === secretNumber) {
+        showMessage(`🎉 Correct! The number was ${secretNumber}.`, 'lightgreen');
+        checkHighScore();
+      } else if (attemptsLeft === 0) {
+        showMessage(`😢 Out of attempts! The number was ${secretNumber}.`, 'red');
+      } else {
+        const hint = guess < secretNumber ? 'Too low!' : 'Too high!';
+        showMessage(`${hint} Try again.`, 'yellow');
+      }
+    }
+
+    function showMessage(text, color) {
+      const msg = document.getElementById('message');
+      msg.textContent = text;
+      msg.style.color = color;
+    }
+
+    function checkHighScore() {
+      const best = highScores[difficultyKey];
+      if (!best || attemptsLeft > (difficulties[difficultyKey].attempts - best.attemptsUsed)) {
+        const name = prompt("New high score! Enter your name:") || 'Anonymous';
+        highScores[difficultyKey] = {
+          name,
+          attemptsUsed: difficulties[difficultyKey].attempts - attemptsLeft
+        };
+        localStorage.setItem('highScores', JSON.stringify(highScores));
+        showHighScores();
+      }
+    }
+
+    function showHighScores() {
+      const ul = document.getElementById('high-score-list');
+      ul.innerHTML = '';
+      Object.keys(difficulties).forEach(diff => {
+        if (highScores[diff]) {
+          const li = document.createElement('li');
+          li.textContent = `${diff.toUpperCase()}: ${highScores[diff].name} - ${highScores[diff].attemptsUsed} attempts`;
+          ul.appendChild(li);
+        }
+      });
+    }
+
+    // Setup
+    document.getElementById('difficulty').addEventListener('change', e => {
+      setDifficulty(e.target.value);
+    });
+
+    setDifficulty('easy');
+    showHighScores();
+  </script>
+</body>
+</html>
